@@ -14,7 +14,7 @@ fn main() {
     if args.len() >= 2 {
         if &args[1] == "compile" {
             // Just compile
-            println!("Compiling html assets...");
+            println!("Compiling HTML...");
             let folder = fs::read_dir(&args[2]).expect("Could not open specified folder!");
             let mut output = String::new();
             output += "pub struct Assets {}\nimpl Assets {\n";
