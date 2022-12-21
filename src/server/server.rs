@@ -1,9 +1,9 @@
 use std::{
     io::{BufReader, Read},
-    net::{TcpListener, TcpStream}
+    net::{TcpListener, TcpStream},
 };
 
-use super::{queue::{RequestQueue, WorkerSetupFn}, reqres::BodyContents, Request, RequestType, Response};
+use super::{BodyContents, Request, RequestQueue, RequestType, Response, WorkerSetupFn};
 
 pub struct Server<T: 'static + Send> {
     routes: RouteStorage<T>,
@@ -119,7 +119,7 @@ impl<T: 'static + Send> Server<T> {
         return created_request;
     }
 
-    fn default_error(_: &Request, res: &mut Response, _:&T) {
+    fn default_error(_: &Request, res: &mut Response, _: &T) {
         res.send_str("404 not found");
     }
 }
@@ -148,7 +148,7 @@ impl<T: 'static + Send> Route<T> {
     }
 }
 
-pub struct IncomingRequest<T:'static + Send> {
+pub struct IncomingRequest<T: 'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
     pub route: fn(&Request, &mut Response, &T),

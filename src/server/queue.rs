@@ -1,11 +1,11 @@
-use super::{server::IncomingRequest, Response};
+use super::{IncomingRequest, Response};
 use std::{
     io::Write,
     sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, Mutex,
     },
-    thread::{spawn, available_parallelism, JoinHandle},
+    thread::{available_parallelism, spawn, JoinHandle},
 };
 
 pub struct RequestQueue<T: 'static + Send> {
@@ -14,20 +14,19 @@ pub struct RequestQueue<T: 'static + Send> {
 }
 impl<T: 'static + Send> RequestQueue<T> {
     pub fn new(f: WorkerSetupFn<T>) -> RequestQueue<T> {
+        let wc = available_parallelism().unwrap().get() / 2;
+        RequestQueue::new_with_thread_count(f, wc)
+    }
+
+    pub fn new_with_thread_count(f: WorkerSetupFn<T>, thread_count: usize) -> RequestQueue<T> {
         let (sender, reciever) = channel::<IncomingRequest<T>>();
-        let wc = available_parallelism().unwrap().get() / 4;
-
-
         let mut workers: Vec<RequestWorker> = Vec::new();
         let rc_mutex = Arc::new(Mutex::new(reciever));
 
-        println!("Started with {} threads", &wc);
+        println!("Started with {} threads", &thread_count);
 
-        for _ in 0..wc {
-            workers.push(RequestWorker::spawn(
-                rc_mutex.clone(),
-                f
-            ));
+        for _ in 0..thread_count {
+            workers.push(RequestWorker::spawn(rc_mutex.clone(), f));
         }
 
         RequestQueue {
@@ -57,16 +56,16 @@ pub struct RequestWorker {
 impl RequestWorker {
     pub fn spawn<T: 'static + Send>(
         reciever: Arc<Mutex<Receiver<IncomingRequest<T>>>>,
-        setup_fn: WorkerSetupFn<T>
+        setup_fn: WorkerSetupFn<T>,
     ) -> RequestWorker {
         let thread = spawn(move || {
+        	// Spawn the required helper object
             let data = setup_fn();
             loop {
                 let ir_task_op = reciever.lock().unwrap().recv();
                 if let Ok(mut ir_task) = ir_task_op {
                     // Create a new response
                     let mut res = Response::new();
-                    // Minor validation
                     // Tell the handler to parse it
                     (ir_task.route)(&ir_task.request, &mut res, &data);
                     // Write stream
