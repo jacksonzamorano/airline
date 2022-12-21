@@ -159,6 +159,13 @@ impl JsonObject {
         }
         Some(JsonObject::from_string(child.contents.clone()))
     }
+    pub fn array(&self, key: &str) -> Option<JsonArray> {
+        let child = self.keys.get(key)?;
+        if child.content_type != JsonType::Array {
+            return None;
+        }
+        Some(JsonArray::from_string(child.contents.clone()))
+    }
 }
 
 #[derive(Debug)]
@@ -309,6 +316,31 @@ impl JsonChild {
             content_type: JsonType::String,
             contents: String::new(),
         }
+    }
+
+    pub fn string(&self) -> Option<String> {
+        Some(self.contents.clone())
+    }
+
+    pub fn i32(&self) -> Option<i32> {
+        self.contents.parse().ok()
+    }
+
+    pub fn f32(&self) -> Option<f32> {
+        self.contents.parse().ok()
+    }
+
+    pub fn object(&self) -> Option<JsonObject> {
+        if self.content_type != JsonType::Object {
+            return None;
+        }
+        Some(JsonObject::from_string(self.contents.clone()))
+    }
+    pub fn array(&self) -> Option<JsonArray> {
+        if self.content_type != JsonType::Array {
+            return None;
+        }
+        Some(JsonArray::from_string(self.contents.clone()))
     }
 }
 

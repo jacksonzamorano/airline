@@ -3,33 +3,32 @@ use std::{
     net::{TcpListener, TcpStream}
 };
 
-use super::{queue::RequestQueue, Request, RequestType, Response, reqres::BodyContents};
+use super::{queue::{RequestQueue, WorkerSetupFn}, reqres::BodyContents, Request, RequestType, Response};
 
-pub struct Server {
-    routes: RouteStorage,
+pub struct Server<T: 'static + Send> {
+    routes: RouteStorage<T>,
     listener: TcpListener,
-    request_queue: RequestQueue,
+    request_queue: RequestQueue<T>,
 }
-impl Server {
-    pub fn new(port: i32) -> Server {
+impl<T: 'static + Send> Server<T> {
+    pub fn new(port: i32, setup_fn: WorkerSetupFn<T>) -> Server<T> {
         Server {
             routes: RouteStorage::new(),
             listener: TcpListener::bind(format!("127.0.0.1:{}", port)).unwrap(),
-            request_queue: RequestQueue::new(),
+            request_queue: RequestQueue::new(setup_fn),
         }
     }
 
-    pub fn register(&mut self, r: Route) {
+    pub fn register(&mut self, r: Route<T>) {
         self.routes.add(r);
     }
-
     pub fn start(&mut self) {
         self.routes.prep();
         loop {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);
-                let mut matched_path: fn(&Request, &mut Response) = Server::default_error;
+                let mut matched_path: fn(&Request, &mut Response, &T) = Server::default_error;
                 if let Some(handler) = self
                     .routes
                     .handler(&req_parsed.request_type, &req_parsed.path)
@@ -92,7 +91,7 @@ impl Server {
                     return (d[0].to_string(), d[1].to_string());
                 })
                 .collect(),
-            body: None
+            body: None,
         };
 
         if let Some(content_length_str) = created_request.headers.get("Content-Length") {
@@ -120,22 +119,22 @@ impl Server {
         return created_request;
     }
 
-    fn default_error(_: &Request, res: &mut Response) {
+    fn default_error(_: &Request, res: &mut Response, _:&T) {
         res.send_str("404 not found");
     }
 }
 
-pub struct Route {
+pub struct Route<T: 'static + Send> {
     path: String,
     request_type: RequestType,
-    handler: fn(&Request, &mut Response),
+    handler: fn(&Request, &mut Response, &T),
 }
-impl Route {
+impl<T: 'static + Send> Route<T> {
     pub fn create(
         path: &str,
         request_type: RequestType,
-        handler: fn(&Request, &mut Response),
-    ) -> Route {
+        handler: fn(&Request, &mut Response, &T),
+    ) -> Route<T> {
         let mut resolved_path = String::new();
         if !path.starts_with("/") {
             resolved_path += "/";
@@ -149,22 +148,22 @@ impl Route {
     }
 }
 
-pub struct IncomingRequest {
+pub struct IncomingRequest<T:'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
-    pub route: fn(&Request, &mut Response),
+    pub route: fn(&Request, &mut Response, &T),
 }
 
-pub struct RouteStorage {
-    routes_get: Vec<Route>,
-    routes_post: Vec<Route>,
-    routes_put: Vec<Route>,
-    routes_delete: Vec<Route>,
-    routes_any: Vec<Route>,
+pub struct RouteStorage<T: 'static + Send> {
+    routes_get: Vec<Route<T>>,
+    routes_post: Vec<Route<T>>,
+    routes_put: Vec<Route<T>>,
+    routes_delete: Vec<Route<T>>,
+    routes_any: Vec<Route<T>>,
 }
 
-impl RouteStorage {
-    fn new() -> RouteStorage {
+impl<T: 'static + Send> RouteStorage<T> {
+    fn new() -> RouteStorage<T> {
         RouteStorage {
             routes_get: Vec::new(),
             routes_post: Vec::new(),
@@ -178,7 +177,7 @@ impl RouteStorage {
         &self,
         request_type: &RequestType,
         path: &String,
-    ) -> Option<fn(&Request, &mut Response)> {
+    ) -> Option<fn(&Request, &mut Response, &T)> {
         let handler_cat = match request_type {
             RequestType::Get => &self.routes_get,
             RequestType::Post => &self.routes_post,
@@ -198,7 +197,7 @@ impl RouteStorage {
             None
         }
     }
-    fn add(&mut self, route: Route) {
+    fn add(&mut self, route: Route<T>) {
         let handler_cat = match route.request_type {
             RequestType::Get => &mut self.routes_get,
             RequestType::Post => &mut self.routes_post,
