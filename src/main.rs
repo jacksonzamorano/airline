@@ -23,7 +23,11 @@ fn main() {
                 let contents = fs::read_to_string(f_unwrap.path())
                     .unwrap()
                     .replace("\"", "\\\"");
-                let f_name = f_unwrap.file_name().to_str().unwrap().replace(".html", "").to_uppercase();
+                let mut f_name = f_unwrap.file_name().to_str().unwrap().to_uppercase();
+                if f_name.ends_with(".HTML") {
+                    continue;
+                }
+                f_name = f_name.replace(".HTML", "");
                 output += "\tpub const ";
                 output += &f_name;
                 output += ":&str = \"";
