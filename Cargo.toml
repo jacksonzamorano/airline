@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Jackson Zamorano"]
 documentation = "https://github.com/jacksonzamorano/airline"
 repository = "https://github.com/jacksonzamorano/airline"
-hompage = "https://github.com/jacksonzamorano/airline"
+homepage = "https://github.com/jacksonzamorano/airline"
 license-file = "LICENSE.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

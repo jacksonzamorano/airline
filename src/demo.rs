@@ -8,7 +8,7 @@ impl RequestConnector {
 }
 
 fn index(_req: &Request, res: &mut Response, _data: &RequestConnector) {
-    res.send_str(Assets::INDEX);
+    res.send_string(Assets::INDEX);
 }
 
 pub fn create_demo() {

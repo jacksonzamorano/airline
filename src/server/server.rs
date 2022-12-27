@@ -120,7 +120,7 @@ impl<T: 'static + Send> Server<T> {
     }
 
     fn default_error(_: &Request, res: &mut Response, _: &T) {
-        res.send_str("404 not found");
+        res.send_string("404 not found");
     }
 }
 

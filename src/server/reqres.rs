@@ -38,19 +38,8 @@ impl Response {
     }
 
     // Functions for setting data
-    pub fn send_str(&mut self, s: &str) {
-        self.data = s.as_bytes().to_vec();
-    }
-    pub fn send_string(&mut self, s: &String) {
-        self.data = s.as_bytes().to_vec();
-    }
-    pub fn send_html(&mut self, path: &str) {
-        if let Ok(contents) = read_to_string(path) {
-            self.data = contents.into_bytes();
-        } else {
-            self.status = ResponseStatusCode::InternalServerError;
-            self.send_str("Cannot find identified file.");
-        }
+    pub fn send_string<S: AsRef<str>>(&mut self, s: S) {
+        self.data = s.as_ref().as_bytes().to_vec();
     }
 
     // Get byts out
