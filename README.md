@@ -7,7 +7,7 @@ No-dependancy multithreaded web server.
 Airline is intended to simplify a lot of the additional complexity added by other packages. Instead of requiring a ton of packages, and in some cases a runtime, Airline is pure Rust with no dependancies.
 
 ## Overview & Usage
-```
+```rust
 struct RequestConnector;
 impl RequestConnector { 
     fn new() -> RequestConnector {
