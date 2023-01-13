@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::read_to_string};
+use std::collections::HashMap;
 
 use super::{JsonObject, JsonArray};
 
@@ -40,6 +40,9 @@ impl Response {
     // Functions for setting data
     pub fn send_string<S: AsRef<str>>(&mut self, s: S) {
         self.data = s.as_ref().as_bytes().to_vec();
+    }
+    pub fn send_bytes(&mut self, s: Vec<u8>) {
+        self.data = s;
     }
 
     // Get byts out

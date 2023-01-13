@@ -37,41 +37,35 @@ fn compile_assets(assets_dir: &String, dev_mode: bool) {
     let folder = fs::read_dir(assets_dir).expect("Could not open specified folder!");
     let mut output = String::new();
     if dev_mode {
-        output += "use std::fs::read_to_string;\n";
+        output += "use std::fs::read;\n";
     }
     output += "pub struct Assets {}\nimpl Assets {\n";
     for file in folder {
         let f_unwrap = file.unwrap();
-        let contents = fs::read_to_string(f_unwrap.path())
-            .unwrap()
-            .replace("\"", "\\\"");
+        let contents = fs::read(f_unwrap.path())
+            .unwrap();
         let f_path = f_unwrap.file_name().to_str().unwrap().to_string();
         let mut f_name = f_unwrap.file_name().to_str().unwrap().to_uppercase();
-        if !f_name.ends_with(".HTML") {
-            continue;
-        }
-        f_name = f_name.replace(".HTML", "");
+        f_name = f_name.split(".").collect::<Vec<&str>>()[0].to_string();
         if !dev_mode {
             output += "\tconst K_";
             output += &f_name;
-            output += ":&'static str = \"";
-            output += &contents;
-            output += "\";\n\n";
+            output += ":&'static [u8] = &[";
+            for c in contents {
+                output += &c.to_string();
+                output += ",\n\t\t";
+            }
+            output += "];\n\n";
         }
         output += "\tpub fn ";
         output += &f_name.to_lowercase();
-        output += "() -> ";
-        if dev_mode {
-            output += "String";
-        } else {
-            output += "&'static str";
-        }
-        output += "{\n";
+        output += "() -> Vec<u8> {\n";
         if !dev_mode {
             output += "\t\treturn Assets::K_";
             output += &f_name;
+            output += ".to_vec()";
         } else {
-            output += "\t\treturn read_to_string(\"";
+            output += "\t\treturn read(\"";
             output += &assets_dir;
             if !assets_dir.ends_with("/") {
                 output += "/";
