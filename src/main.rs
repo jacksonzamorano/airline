@@ -1,9 +1,8 @@
 use std::{
     env::args,
     fs,
-    process::Command, collections::HashMap,
+    process::Command
 };
-use airline::ToJson;
 use demo::create_demo;
 
 pub mod assets;
