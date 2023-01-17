@@ -387,7 +387,31 @@ impl ToJson for String {
         return o;
     }
 }
+impl ToJson for str {
+    fn to_json(&self) -> String {
+        let mut o = String::new();
+        o += "\"";
+        o += self;
+        o += "\"";
+        return o;
+    }
+}
 impl ToJson for i32 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
+impl ToJson for i64 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
+impl ToJson for f32 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
+impl ToJson for f64 {
     fn to_json(&self) -> String {
         return self.to_string();
     }
@@ -411,6 +435,22 @@ impl<T: ToJson> ToJson for Vec<T> {
         }
         output = output[0..output.chars().count() - 1].to_string();
         output += "]";
+        return output;
+    }
+}
+impl<K: AsRef<str>, V: ToJson> ToJson for HashMap<K, V> {
+    fn to_json(&self) -> String {
+        let mut output = String::new();
+        output += "{";
+        for (k, v) in self {
+            output += "\"";
+            output += k.as_ref();
+            output += "\":";
+            output += &v.to_json();
+            output += ",";
+        }
+        output = output[0..output.len() - 1].to_string();
+        output += "}";
         return output;
     }
 }

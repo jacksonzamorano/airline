@@ -19,4 +19,4 @@ name = "airline"
 path = "src/main.rs"
 
 [dependencies]
-airline-macros = { path = "../airline-macros" }
+airline-macros = "0.1.0"
