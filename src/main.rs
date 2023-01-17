@@ -3,7 +3,6 @@ use std::{
     fs,
     process::Command,
 };
-
 use demo::create_demo;
 
 pub mod assets;

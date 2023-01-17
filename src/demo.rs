@@ -1,4 +1,5 @@
-use crate::{server::{Route, RequestType, Request, Response, Server}, assets::Assets};
+use airline_macros::ToJson;
+use crate::{server::{Route, RequestType, Request, Response, Server, json::ToJson}, assets::Assets};
 
 struct RequestConnector;
 impl RequestConnector { 
@@ -16,4 +17,18 @@ pub fn create_demo() {
     let mut server = Server::new(3000, RequestConnector::new);
     server.register(root);
     server.start();
+}
+
+#[derive(ToJson)]
+pub struct Resource {
+    pub id: String,
+    pub friendly_name: String
+}
+
+#[derive(ToJson)]
+pub struct LoginData {
+    pub username: String,
+    pub password: String,
+    pub resources: Vec<Resource>, 
+    pub is_superuser: bool
 }

@@ -187,7 +187,7 @@ impl JsonArray {
                 loop {
                     if let Some(value_spacing) = enumerator.next() {
                         if value_spacing != ' ' {
-                        	value_start = value_spacing;
+                            value_start = value_spacing;
                             break;
                         }
                     } else {
@@ -276,16 +276,16 @@ impl JsonArray {
                 // and read straight to the comma, we do not search until a comma
                 // if our type is primitive.
                 if !current_value.content_type.is_primitive() {
-	                loop {
-	                    if let Some(value_skipper) = enumerator.next() {
-	                        if value_skipper == ',' {
-	                            break;
-	                        }
-	                    } else {
-	                        break;
-	                    }
-	                }
-            	}
+                    loop {
+                        if let Some(value_skipper) = enumerator.next() {
+                            if value_skipper == ',' {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
                 values.push(current_value);
                 current_value = JsonChild::new();
             } else {
@@ -371,5 +371,46 @@ impl JsonType {
         } else {
             panic!("Unexpected value {}", dlm);
         }
+    }
+}
+
+pub trait ToJson {
+    fn to_json(&self) -> String;
+}
+
+impl ToJson for String {
+    fn to_json(&self) -> String {
+        let mut o = String::new();
+        o += "\"";
+        o += self;
+        o += "\"";
+        return o;
+    }
+}
+impl ToJson for i32 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
+impl ToJson for bool {
+    fn to_json(&self) -> String {
+        return if *self {
+            "true".to_string()
+        } else {
+            "false".to_string()
+        };
+    }
+}
+impl<T: ToJson> ToJson for Vec<T> {
+    fn to_json(&self) -> String {
+        let mut output = String::new();
+        output += "[";
+        for i in self.iter() {
+            output += &i.to_json();
+            output += ",";
+        }
+        output = output[0..output.chars().count() - 1].to_string();
+        output += "]";
+        return output;
     }
 }
