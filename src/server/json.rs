@@ -147,7 +147,17 @@ impl JsonObject {
         child.contents.parse().ok()
     }
 
+    pub fn i64(&self, key: &str) -> Option<i64> {
+        let child = self.keys.get(key)?;
+        child.contents.parse().ok()
+    }
+
     pub fn f32(&self, key: &str) -> Option<f32> {
+        let child = self.keys.get(key)?;
+        child.contents.parse().ok()
+    }
+
+    pub fn f64(&self, key: &str) -> Option<f64> {
         let child = self.keys.get(key)?;
         child.contents.parse().ok()
     }
@@ -324,9 +334,17 @@ impl JsonChild {
 
     pub fn i32(&self) -> Option<i32> {
         self.contents.parse().ok()
+    }    
+
+    pub fn i64(&self) -> Option<i64> {
+        self.contents.parse().ok()
     }
 
     pub fn f32(&self) -> Option<f32> {
+        self.contents.parse().ok()
+    }
+
+    pub fn f64(&self) -> Option<f64> {
         self.contents.parse().ok()
     }
 
