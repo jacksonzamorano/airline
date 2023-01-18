@@ -3,10 +3,6 @@ use std::{
     fs,
     process::Command
 };
-use demo::create_demo;
-
-pub mod assets;
-pub mod demo;
 pub mod server;
 
 fn main() {
@@ -26,8 +22,6 @@ fn main() {
                 println!("(pass --release to enable asset integration)");
             }
             compile_assets(&args[2], dev_mode);
-        } else if &args[1] == "demo" {
-            run_demo();
         }
     }
 }
@@ -66,8 +60,8 @@ fn compile_assets(assets_dir: &String, dev_mode: bool) {
         } else {
             output += "\t\treturn read(\"";
             output += &assets_dir;
-            if !assets_dir.ends_with("/") {
-                output += "/";
+            if !assets_dir.ends_with(delimiter()) {
+                output += delimiter();
             }
             output += &f_path;
             output += "\").unwrap()"
@@ -75,7 +69,11 @@ fn compile_assets(assets_dir: &String, dev_mode: bool) {
         output += ";\n\t}\n\n";
     }
     output += "}";
-    _ = fs::write("src/assets.rs", output);
+    let mut output_path = String::new();
+    output_path += "src";
+    output_path += delimiter();
+    output_path += "assets.rs";
+    _ = fs::write(output_path, output);
     cargo_build(dev_mode);
 }
 
@@ -118,8 +116,4 @@ fn delimiter() -> &'static str {
     } else {
         "/"
     }
-}
-
-fn run_demo() {
-    create_demo();
 }
