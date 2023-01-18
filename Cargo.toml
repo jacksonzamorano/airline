@@ -1,13 +1,13 @@
 [package]
 name = "airline"
 description = "No dependancy web server"
-version = "0.1.0"
+license = "MIT"
+version = "0.1.1"
 edition = "2021"
 authors = ["Jackson Zamorano"]
 documentation = "https://github.com/jacksonzamorano/airline"
 repository = "https://github.com/jacksonzamorano/airline"
 homepage = "https://github.com/jacksonzamorano/airline"
-license-file = "LICENSE.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
