@@ -11,17 +11,10 @@ fn main() {
         println!("Welcome to Airline.")
     }
     if args.len() >= 2 {
-        if &args[1] == "compile" {
-            let mut dev_mode = true;
-            if args.len() > 3 && args[3] == "--release" {
-                println!("Compiling in release mode. Assets will be integrated into the binary.");
-                println!("(pass --release to enable asset integration)");
-                dev_mode = false;
-            } else {
-                println!("Compiling in develop mode. Assets will be read from the file system.");
-                println!("(pass --release to enable asset integration)");
-            }
-            compile_assets(&args[2], dev_mode);
+        if &args[1] == "scan" {
+            compile_assets(&args[2], true);
+        } else if &args[2] == "compile" {
+            compile_assets(&args[2], false);
         }
     }
 }
@@ -32,7 +25,7 @@ fn compile_assets(assets_dir: &String, dev_mode: bool) {
     if dev_mode {
         output += "use std::fs::read;\n";
     }
-    output += "pub struct Assets {}\nimpl Assets {\n";
+    output += "pub struct Assets;\nimpl Assets {\n";
     for file in folder {
         let f_unwrap = file.unwrap();
         let contents = fs::read(f_unwrap.path())
