@@ -67,10 +67,13 @@ impl RequestWorker {
                     // Create a new response
                     let mut res = Response::new();
                     // Tell the handler to parse it
-                    (ir_task.route)(&ir_task.request, &mut res, &data);
-                    // Write stream
                     let mut bytes = res.header();
-                    bytes.append(&mut res.bytes());
+                    if let Some(mut data) = (ir_task.route)(&ir_task.request, &mut res, &data) {
+                        bytes.append(&mut data);
+                    } else {
+                        bytes.append(&mut ir_task.error_message);
+                    }
+                    // Write stream
                     _ = ir_task.stream.write(&bytes);
                 } else {
                     break;

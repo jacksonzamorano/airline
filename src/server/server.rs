@@ -28,18 +28,21 @@ impl<T: 'static + Send> Server<T> {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);
-                let mut matched_path: fn(&Request, &mut Response, &T) = Server::default_error;
+                let mut matched_path: fn(&Request, &mut Response, &T) -> Option<Vec<u8>> = Server::default_error;
+                let mut matched_error: Vec<u8> = Vec::<u8>::new();
                 if let Some(handler) = self
                     .routes
                     .handler(&req_parsed.request_type, &req_parsed.path)
                 {
-                    matched_path = handler;
+                    matched_path = handler.handler;
+                    matched_error = handler.error_message.clone();
                 }
 
                 let req = IncomingRequest {
                     request: req_parsed,
                     stream: req_stream,
                     route: matched_path,
+                    error_message: matched_error
                 };
                 self.request_queue.add(req);
             }
@@ -119,21 +122,23 @@ impl<T: 'static + Send> Server<T> {
         return created_request;
     }
 
-    fn default_error(_: &Request, res: &mut Response, _: &T) {
-        res.send_string("404 not found");
+    fn default_error(_: &Request, _: &mut Response, _: &T) -> Option<Vec<u8>> {
+        Some("404 not found".bytes().into_iter().collect::<Vec<u8>>())
     }
 }
 
 pub struct Route<T: 'static + Send> {
     path: String,
     request_type: RequestType,
-    handler: fn(&Request, &mut Response, &T),
+    error_message: Vec<u8>,
+    handler: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
 }
 impl<T: 'static + Send> Route<T> {
     pub fn create(
         path: &str,
         request_type: RequestType,
-        handler: fn(&Request, &mut Response, &T),
+        error_message: Vec<u8>,
+        handler: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
     ) -> Route<T> {
         let mut resolved_path = String::new();
         if !path.starts_with("/") {
@@ -143,15 +148,32 @@ impl<T: 'static + Send> Route<T> {
         Route {
             path: resolved_path,
             request_type,
+            error_message,
             handler,
         }
+    }
+}
+
+pub trait ToBytes {
+    fn send(self) -> Vec<u8>;
+}
+
+impl ToBytes for String {
+    fn send(self) -> Vec<u8> {
+        self.into_bytes()
+    }
+}
+impl ToBytes for &str {
+    fn send(self) -> Vec<u8> {
+        self.bytes().into_iter().collect()
     }
 }
 
 pub struct IncomingRequest<T: 'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
-    pub route: fn(&Request, &mut Response, &T),
+    pub error_message: Vec<u8>,
+    pub route: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
 }
 
 pub struct RouteStorage<T: 'static + Send> {
@@ -177,7 +199,7 @@ impl<T: 'static + Send> RouteStorage<T> {
         &self,
         request_type: &RequestType,
         path: &String,
-    ) -> Option<fn(&Request, &mut Response, &T)> {
+    ) -> Option<&Route<T>> {
         let handler_cat = match request_type {
             RequestType::Get => &self.routes_get,
             RequestType::Post => &self.routes_post,
@@ -186,13 +208,13 @@ impl<T: 'static + Send> RouteStorage<T> {
             RequestType::Any => &self.routes_any,
         };
         if let Ok(handler_ix) = handler_cat.binary_search_by(|a| a.path.cmp(path)) {
-            Some(handler_cat[handler_ix].handler)
+            Some(&handler_cat[handler_ix])
         } else if !request_type.is_any() {
             let any_ix = self
                 .routes_any
                 .binary_search_by(|a| a.path.cmp(path))
                 .ok()?;
-            Some(self.routes_any[any_ix].handler)
+            Some(&self.routes_any[any_ix])
         } else {
             None
         }
