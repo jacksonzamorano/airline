@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-
-use super::{JsonObject, JsonArray};
+use super::{JsonObject, JsonArray, ToJson};
 
 #[derive(Debug)]
 pub struct Request {
@@ -26,6 +25,17 @@ impl Response {
             status: ResponseStatusCode::Ok,
         }
     }
+
+    pub fn data(data: Vec<u8>) -> Response {
+        Response { data, status: ResponseStatusCode::Ok }
+    }
+    pub fn string<S: AsRef<str>>(s: S) -> Response {
+        Response::data(s.as_ref().bytes().collect())
+    }
+    pub fn json<S: ToJson>(s: S) -> Response {
+        Response::data(s.to_json().into_bytes())
+    }
+
     pub fn header(&self) -> Vec<u8> {
         let mut output = String::from("HTTP/1.1 ");
         output += &self.status.http_string();
@@ -33,22 +43,61 @@ impl Response {
         return output.into_bytes();
     }
 
-    pub fn set_status(&mut self, status: ResponseStatusCode) {
+    pub fn status(mut self, status: ResponseStatusCode) -> Response {
         self.status = status;
+        return self;
     }
 
-    // Functions for setting data
-    pub fn send_string<S: AsRef<str>>(&mut self, s: S) {
-        self.data = s.as_ref().as_bytes().to_vec();
-    }
-    pub fn send_bytes(&mut self, s: Vec<u8>) {
-        self.data = s;
-    }
-
-    // Get byts out
+    // Get bytes out
     pub fn bytes(self) -> Vec<u8> {
         return self.data;
     }
+}
+
+pub struct RouteError {
+    pub message: String,
+    pub status_code: ResponseStatusCode,
+    pub override_output: bool
+}
+impl RouteError {
+    pub fn bad_request(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::BadRequest, override_output: false }
+    }
+    pub fn forbidden(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Forbidden, override_output: false }
+    }
+    pub fn not_found(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::NotFound, override_output: false }
+    }
+    pub fn conflict(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Conflict, override_output: false }
+    }
+    pub fn custom(msg: &str, status_code: ResponseStatusCode) -> RouteError {
+        RouteError { message: msg.to_string(), status_code, override_output: true }
+    }
+
+    pub fn output(&self) -> String {
+        if self.override_output {
+            return self.message.clone();
+        }
+        let mut o = String::new();
+        o += "{\n";
+        o += "\t\"code\":\"";
+        o += &self.status_code.code().to_string();
+        o += "\",\n";
+        o += "\t\"message\":\"";
+        o += &self.message;
+        o += "\"\n}";
+        o
+    }
+
+    pub fn header(&self) -> Vec<u8> {
+        let mut output = String::from("HTTP/1.1 ");
+        output += &self.status_code.http_string();
+        output += "\r\n\r\n";
+        return output.into_bytes();
+    }
+
 }
 
 #[derive(Clone)]

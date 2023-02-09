@@ -64,18 +64,15 @@ impl RequestWorker {
             loop {
                 let ir_task_op = reciever.lock().unwrap().recv();
                 if let Ok(mut ir_task) = ir_task_op {
-                    // Create a new response
-                    let mut res = Response::new();
                     // Tell the handler to parse it
                     let mut bytes = Vec::new();
-                    match (ir_task.route)(&ir_task.request, &mut res, &data) {
-                        Ok(mut body) => {
-                            bytes.append(&mut res.header());
-                            bytes.append(&mut body)
+                    match (ir_task.route)(&ir_task.request, &data) {
+                        Ok(body) => {
+                            bytes.append(&mut body.header());
+                            bytes.append(&mut body.bytes())
                         },
                         Err(error) => {
-                            res.set_status(error.status_code.clone());
-                            bytes.append(&mut res.header());
+                            bytes.append(&mut error.header());
                             bytes.append(&mut error.output().into_bytes())
                         }
                     };
