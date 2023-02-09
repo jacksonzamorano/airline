@@ -28,7 +28,7 @@ impl<T: 'static + Send> Server<T> {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);
-                let mut matched_path: fn(&Request, &mut Response, &T) -> Option<Vec<u8>> = Server::default_error;
+                let mut matched_path: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String> = Server::default_error;
                 let mut matched_error: Vec<u8> = Vec::<u8>::new();
                 if let Some(handler) = self
                     .routes
@@ -122,23 +122,21 @@ impl<T: 'static + Send> Server<T> {
         return created_request;
     }
 
-    fn default_error(_: &Request, _: &mut Response, _: &T) -> Option<Vec<u8>> {
-        Some("404 not found".bytes().into_iter().collect::<Vec<u8>>())
+    fn default_error(_: &Request, _: &mut Response, _: &T) -> Result<Vec<u8>, String> {
+        Ok("404 not found".bytes().into_iter().collect::<Vec<u8>>())
     }
 }
 
 pub struct Route<T: 'static + Send> {
     path: String,
     request_type: RequestType,
-    error_message: Vec<u8>,
-    handler: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
+    handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
 }
 impl<T: 'static + Send> Route<T> {
     pub fn create(
         path: &str,
         request_type: RequestType,
-        error_message: Vec<u8>,
-        handler: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
+        handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
     ) -> Route<T> {
         let mut resolved_path = String::new();
         if !path.starts_with("/") {
@@ -148,7 +146,6 @@ impl<T: 'static + Send> Route<T> {
         Route {
             path: resolved_path,
             request_type,
-            error_message,
             handler,
         }
     }
@@ -172,8 +169,7 @@ impl ToBytes for &str {
 pub struct IncomingRequest<T: 'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
-    pub error_message: Vec<u8>,
-    pub route: fn(&Request, &mut Response, &T) -> Option<Vec<u8>>,
+    pub route: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
 }
 
 pub struct RouteStorage<T: 'static + Send> {

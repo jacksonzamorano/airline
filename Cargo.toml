@@ -2,7 +2,7 @@
 name = "airline"
 description = "No dependancy web server"
 license = "MIT"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Jackson Zamorano"]
 documentation = "https://github.com/jacksonzamorano/airline"
