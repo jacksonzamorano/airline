@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use super::RouteError;
+
 #[derive(Debug)]
 pub struct JsonObject {
     keys: HashMap<String, JsonChild>,
@@ -142,9 +144,19 @@ impl JsonObject {
         Some(child.contents.clone())
     }
 
+    pub fn validate_string(&self, key: &str, err: &str) -> Result<String, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        Ok(child.contents.clone())
+    }
+
     pub fn i32(&self, key: &str) -> Option<i32> {
         let child = self.keys.get(key)?;
         child.contents.parse().ok()
+    }
+
+    pub fn validate_i32(&self, key: &str, err: &str) -> Result<i32, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        child.contents.parse().or(Err(RouteError::bad_request(err))?)
     }
 
     pub fn i64(&self, key: &str) -> Option<i64> {
@@ -152,14 +164,29 @@ impl JsonObject {
         child.contents.parse().ok()
     }
 
+    pub fn validate_i64(&self, key: &str, err: &str) -> Result<i64, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        child.contents.parse().or(Err(RouteError::bad_request(err))?)
+    }
+
     pub fn f32(&self, key: &str) -> Option<f32> {
         let child = self.keys.get(key)?;
         child.contents.parse().ok()
     }
 
+    pub fn validate_f32(&self, key: &str, err: &str) -> Result<f32, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        child.contents.parse().or(Err(RouteError::bad_request(err))?)
+    }
+
     pub fn f64(&self, key: &str) -> Option<f64> {
         let child = self.keys.get(key)?;
         child.contents.parse().ok()
+    }
+
+    pub fn validate_f64(&self, key: &str, err: &str) -> Result<f64, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        child.contents.parse().or(Err(RouteError::bad_request(err))?)
     }
 
     pub fn object(&self, key: &str) -> Option<JsonObject> {
@@ -169,12 +196,29 @@ impl JsonObject {
         }
         Some(JsonObject::from_string(child.contents.clone()))
     }
+
+    pub fn validate_object(&self, key: &str, err: &str) -> Result<JsonObject, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        if child.content_type != JsonType::Object {
+            return Err(RouteError::bad_request(err));
+        }
+        Ok(JsonObject::from_string(child.contents.clone()))
+    }
+
     pub fn array(&self, key: &str) -> Option<JsonArray> {
         let child = self.keys.get(key)?;
         if child.content_type != JsonType::Array {
             return None;
         }
         Some(JsonArray::from_string(child.contents.clone()))
+    }
+
+    pub fn validate_array(&self, key: &str, err: &str) -> Result<JsonArray, RouteError> {
+        let child = self.keys.get(key).ok_or(RouteError::bad_request(err))?;
+        if child.content_type != JsonType::Array {
+            return Err(RouteError::bad_request(err));
+        }
+        Ok(JsonArray::from_string(child.contents.clone()))
     }
 }
 
