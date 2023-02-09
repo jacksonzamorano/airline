@@ -64,6 +64,7 @@ impl RequestWorker {
             loop {
                 let ir_task_op = reciever.lock().unwrap().recv();
                 if let Ok(mut ir_task) = ir_task_op {
+                    println!("Rec req");
                     // Create a new response
                     let mut res = Response::new();
                     // Tell the handler to parse it
@@ -71,7 +72,7 @@ impl RequestWorker {
                     match (ir_task.route)(&ir_task.request, &mut res, &data) {
                         Ok(mut data) => bytes.append(&mut data),
                         Err(error) => bytes.append(&mut error.into_bytes())
-                    }
+                    };
                     // Write stream
                     _ = ir_task.stream.write(&bytes);
                 } else {

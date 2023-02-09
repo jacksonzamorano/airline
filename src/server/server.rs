@@ -27,7 +27,7 @@ impl<T: 'static + Send> Server<T> {
         loop {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
-                let req_parsed = self.create_request_object(&mut req_stream);
+                let req_parsed = self.create_request_object(&mut req_stream);                
                 let mut matched_path: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String> = Server::default_error;
                 if let Some(handler) = self
                     .routes
@@ -71,7 +71,6 @@ impl<T: 'static + Send> Server<T> {
                 break;
             }
         }
-
         // Process headers
         let req: Vec<String> = headers_content
             .lines()
@@ -100,11 +99,9 @@ impl<T: 'static + Send> Server<T> {
             let mut content: Vec<u8> = Vec::new();
             // Read body
             loop {
+                if content.len() == content_len { break; }
                 if let Ok(_) = buffer.read_exact(&mut cur_char) {
                     content.push(cur_char[0]);
-                    if content.len() >= content_len {
-                        break;
-                    }
                 } else {
                     break;
                 }
