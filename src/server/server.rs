@@ -29,20 +29,17 @@ impl<T: 'static + Send> Server<T> {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);
                 let mut matched_path: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String> = Server::default_error;
-                let mut matched_error: Vec<u8> = Vec::<u8>::new();
                 if let Some(handler) = self
                     .routes
                     .handler(&req_parsed.request_type, &req_parsed.path)
                 {
                     matched_path = handler.handler;
-                    matched_error = handler.error_message.clone();
                 }
 
                 let req = IncomingRequest {
                     request: req_parsed,
                     stream: req_stream,
                     route: matched_path,
-                    error_message: matched_error
                 };
                 self.request_queue.add(req);
             }

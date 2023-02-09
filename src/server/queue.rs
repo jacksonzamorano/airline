@@ -70,7 +70,7 @@ impl RequestWorker {
                     let mut bytes = res.header();
                     match (ir_task.route)(&ir_task.request, &mut res, &data) {
                         Ok(mut data) => bytes.append(&mut data),
-                        Err(mut error) => bytes.append(&mut error.into_bytes())
+                        Err(error) => bytes.append(&mut error.into_bytes())
                     }
                     // Write stream
                     _ = ir_task.stream.write(&bytes);
