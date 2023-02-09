@@ -67,10 +67,17 @@ impl RequestWorker {
                     // Create a new response
                     let mut res = Response::new();
                     // Tell the handler to parse it
-                    let mut bytes = res.header();
+                    let mut bytes = Vec::new();
                     match (ir_task.route)(&ir_task.request, &mut res, &data) {
-                        Ok(mut data) => bytes.append(&mut data),
-                        Err(error) => bytes.append(&mut error.into_bytes())
+                        Ok(mut body) => {
+                            bytes.append(&mut res.header());
+                            bytes.append(&mut body)
+                        },
+                        Err(error) => {
+                            res.set_status(super::ResponseStatusCode::BadRequest);
+                            bytes.append(&mut res.header());
+                            bytes.append(&mut error.into_bytes())
+                        }
                     };
                     // Write stream
                     _ = ir_task.stream.write(&bytes);
