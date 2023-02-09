@@ -90,7 +90,7 @@ impl<T: 'static + Send> Server<T> {
                     return (d[0].to_string(), d[1].to_string());
                 })
                 .collect(),
-            body: None,
+            body: BodyContents::None,
         };
 
         if let Some(content_length_str) = created_request.headers.get("Content-Length") {
@@ -108,9 +108,9 @@ impl<T: 'static + Send> Server<T> {
             }
             if let Some(content_type) = created_request.headers.get("Content-Type") {
                 let no_charset = content_type.split(" ").collect::<Vec<&str>>()[0].replace(";", "");
-                created_request.body = Some(BodyContents::type_from_mime(&no_charset, content));
+                created_request.body = BodyContents::type_from_mime(&no_charset, content);
             } else {
-                created_request.body = Some(BodyContents::type_from_mime(&String::new(), content));
+                created_request.body = BodyContents::type_from_mime(&String::new(), content);
             }
         }
         return created_request;

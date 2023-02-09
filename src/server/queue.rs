@@ -1,4 +1,4 @@
-use super::{IncomingRequest, Response};
+use super::IncomingRequest;
 use std::{
     io::Write,
     sync::{

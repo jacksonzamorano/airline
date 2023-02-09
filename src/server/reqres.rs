@@ -6,12 +6,7 @@ pub struct Request {
     pub request_type: RequestType,
     pub path: String,
     pub headers: HashMap<String, String>,
-    pub body: Option<BodyContents>,
-}
-impl Request {
-    pub fn has_data(&self) -> bool {
-        return self.body.is_some();
-    }
+    pub body: BodyContents,
 }
 
 pub struct Response {
@@ -273,16 +268,28 @@ impl BodyContents {
         }
     }
 
-    pub fn as_json_object(&self) -> Option<&JsonObject> {
+    pub fn json_object(&self) -> Option<&JsonObject> {
         match self {
             BodyContents::JsonObject(j) => Some(j),
             _ => None
         }
     }    
-    pub fn as_json_array(&self) -> Option<&JsonArray> {
+    pub fn as_json_object(self) -> JsonObject {
+        match self {
+            BodyContents::JsonObject(j) => j,
+            _ => JsonObject::from_string("{}".to_string())
+        }
+    }
+    pub fn json_array(&self) -> Option<&JsonArray> {
         match self {
             BodyContents::JsonArray(j) => Some(j),
             _ => None
+        }
+    }
+    pub fn as_json_array(self) -> JsonArray {
+        match self {
+            BodyContents::JsonArray(j) => j,
+            _ => JsonArray::from_string("[]".to_string())
         }
     }
 }
