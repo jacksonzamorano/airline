@@ -64,7 +64,6 @@ impl RequestWorker {
             loop {
                 let ir_task_op = reciever.lock().unwrap().recv();
                 if let Ok(mut ir_task) = ir_task_op {
-                    println!("Rec req");
                     // Create a new response
                     let mut res = Response::new();
                     // Tell the handler to parse it
