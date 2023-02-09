@@ -131,6 +131,18 @@ impl RouteError {
     pub fn bad_request(msg: &str) -> RouteError {
         RouteError { message: msg.to_string(), status_code: ResponseStatusCode::BadRequest, override_output: false }
     }
+    pub fn forbidden(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Forbidden, override_output: false }
+    }
+    pub fn not_found(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::NotFound, override_output: false }
+    }
+    pub fn conflict(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Conflict, override_output: false }
+    }
+    pub fn custom(msg: &str, status_code: ResponseStatusCode) -> RouteError {
+        RouteError { message: msg.to_string(), status_code, override_output: true }
+    }
 
     pub fn output(&self) -> String {
         if self.override_output {
