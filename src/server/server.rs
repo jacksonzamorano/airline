@@ -3,7 +3,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use super::{BodyContents, Request, RequestQueue, RequestType, Response, WorkerSetupFn};
+use super::{BodyContents, Request, RequestQueue, RequestType, Response, ResponseStatusCode, WorkerSetupFn};
 
 pub struct Server<T: 'static + Send> {
     routes: RouteStorage<T>,
@@ -28,7 +28,7 @@ impl<T: 'static + Send> Server<T> {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);                
-                let mut matched_path: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String> = Server::default_error;
+                let mut matched_path: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, RouteError> = Server::default_error;
                 if let Some(handler) = self
                     .routes
                     .handler(&req_parsed.request_type, &req_parsed.path)
@@ -116,21 +116,48 @@ impl<T: 'static + Send> Server<T> {
         return created_request;
     }
 
-    fn default_error(_: &Request, _: &mut Response, _: &T) -> Result<Vec<u8>, String> {
+    fn default_error(_: &Request, res: &mut Response, _: &T) -> Result<Vec<u8>, RouteError> {
+        res.set_status(ResponseStatusCode::NotFound);
         Ok("404 not found".bytes().into_iter().collect::<Vec<u8>>())
+    }
+}
+
+pub struct RouteError {
+    pub message: String,
+    pub status_code: ResponseStatusCode,
+    pub override_output: bool
+}
+impl RouteError {
+    pub fn bad_request(msg: &str) -> RouteError {
+        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::BadRequest, override_output: false }
+    }
+
+    pub fn output(&self) -> String {
+        if self.override_output {
+            return self.message.clone();
+        }
+        let mut o = String::new();
+        o += "{\n";
+        o += "\t\"code\":\"";
+        o += &self.status_code.code().to_string();
+        o += "\",\n";
+        o += "\t\"message\":\"";
+        o += &self.message;
+        o += "\"\n}";
+        o
     }
 }
 
 pub struct Route<T: 'static + Send> {
     path: String,
     request_type: RequestType,
-    handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
+    handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, RouteError>,
 }
 impl<T: 'static + Send> Route<T> {
     pub fn create(
         path: &str,
         request_type: RequestType,
-        handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
+        handler: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, RouteError>,
     ) -> Route<T> {
         let mut resolved_path = String::new();
         if !path.starts_with("/") {
@@ -163,7 +190,7 @@ impl ToBytes for &str {
 pub struct IncomingRequest<T: 'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
-    pub route: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, String>,
+    pub route: fn(&Request, &mut Response, &T) -> Result<Vec<u8>, RouteError>,
 }
 
 pub struct RouteStorage<T: 'static + Send> {

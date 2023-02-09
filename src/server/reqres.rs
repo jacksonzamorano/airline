@@ -51,6 +51,7 @@ impl Response {
     }
 }
 
+#[derive(Clone)]
 pub enum ResponseStatusCode {
     Ok,
     Created,

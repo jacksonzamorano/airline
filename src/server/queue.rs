@@ -74,9 +74,9 @@ impl RequestWorker {
                             bytes.append(&mut body)
                         },
                         Err(error) => {
-                            res.set_status(super::ResponseStatusCode::BadRequest);
+                            res.set_status(error.status_code.clone());
                             bytes.append(&mut res.header());
-                            bytes.append(&mut error.into_bytes())
+                            bytes.append(&mut error.output().into_bytes())
                         }
                     };
                     // Write stream
