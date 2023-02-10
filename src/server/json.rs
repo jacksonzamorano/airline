@@ -468,6 +468,16 @@ impl ToJson for i64 {
         return self.to_string();
     }
 }
+impl ToJson for u32 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
+impl ToJson for u64 {
+    fn to_json(&self) -> String {
+        return self.to_string();
+    }
+}
 impl ToJson for f32 {
     fn to_json(&self) -> String {
         return self.to_string();
