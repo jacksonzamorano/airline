@@ -68,7 +68,7 @@ impl RequestWorker {
                     let mut bytes = Vec::new();
                     match (ir_task.route)(ir_task.request, &data) {
                         Ok(body) => {
-                            bytes.append(&mut body.header());
+                            bytes.append(&mut body.get_header_data());
                             bytes.append(&mut body.bytes())
                         },
                         Err(error) => {

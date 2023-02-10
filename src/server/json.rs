@@ -505,7 +505,9 @@ impl<T: ToJson> ToJson for Vec<T> {
             output += &i.to_json();
             output += ",";
         }
-        output = output[0..output.chars().count() - 1].to_string();
+        if !self.is_empty() {
+            output = output[0..output.chars().count() - 1].to_string();
+        }
         output += "]";
         return output;
     }

@@ -1,5 +1,5 @@
+use super::{JsonArray, JsonObject, ToJson};
 use std::collections::HashMap;
-use super::{JsonObject, JsonArray, ToJson};
 
 #[derive(Debug)]
 pub struct Request {
@@ -12,28 +12,47 @@ pub struct Request {
 pub struct Response {
     data: Vec<u8>,
     status: ResponseStatusCode,
+    headers: HashMap<String, String>,
 }
 impl Response {
     pub fn new() -> Response {
         Response {
             data: Vec::new(),
             status: ResponseStatusCode::Ok,
+            headers: HashMap::new(),
         }
     }
 
     pub fn data(data: Vec<u8>) -> Response {
-        Response { data, status: ResponseStatusCode::Ok }
+        Response {
+            data,
+            status: ResponseStatusCode::Ok,
+            headers: HashMap::new(),
+        }
     }
     pub fn string<S: AsRef<str>>(s: S) -> Response {
-        Response::data(s.as_ref().bytes().collect())
+        Response::data(s.as_ref().bytes().collect()).header("Content-Type", "text/plain")
     }
     pub fn json<S: ToJson>(s: S) -> Response {
-        Response::data(s.to_json().into_bytes())
+        Response::data(s.to_json().into_bytes()).header("Content-Type", "application/json; charset=utf-8")
+    }
+    pub fn html(s: Vec<u8>) -> Response {
+        Response::data(s).header("Content-Type", "text/html")
     }
 
-    pub fn header(&self) -> Vec<u8> {
+    pub fn get_header_data(&self) -> Vec<u8> {
         let mut output = String::from("HTTP/1.1 ");
         output += &self.status.http_string();
+        if self.headers.len() > 0 {
+            output += "\r\n";
+            output += &self.headers.iter().map(|x| {
+                let mut o = String::new();
+                o += &x.0;
+                o += ": ";
+                o += &x.1;
+                return o;
+            }).collect::<Vec<String>>().join("\n");
+        }
         output += "\r\n\r\n";
         return output.into_bytes();
     }
@@ -41,6 +60,11 @@ impl Response {
     pub fn status(mut self, status: ResponseStatusCode) -> Response {
         self.status = status;
         return self;
+    }
+
+    pub fn header<S: AsRef<str>, T: AsRef<str>>(mut self, key: S, value: T) -> Response {
+        self.headers.insert(key.as_ref().to_string(), value.as_ref().to_string());
+        self
     }
 
     // Get bytes out
@@ -52,23 +76,43 @@ impl Response {
 pub struct RouteError {
     pub message: String,
     pub status_code: ResponseStatusCode,
-    pub override_output: bool
+    pub override_output: bool,
 }
 impl RouteError {
     pub fn bad_request(msg: &str) -> RouteError {
-        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::BadRequest, override_output: false }
+        RouteError {
+            message: msg.to_string(),
+            status_code: ResponseStatusCode::BadRequest,
+            override_output: false,
+        }
     }
     pub fn forbidden(msg: &str) -> RouteError {
-        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Forbidden, override_output: false }
+        RouteError {
+            message: msg.to_string(),
+            status_code: ResponseStatusCode::Forbidden,
+            override_output: false,
+        }
     }
     pub fn not_found(msg: &str) -> RouteError {
-        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::NotFound, override_output: false }
+        RouteError {
+            message: msg.to_string(),
+            status_code: ResponseStatusCode::NotFound,
+            override_output: false,
+        }
     }
     pub fn conflict(msg: &str) -> RouteError {
-        RouteError { message: msg.to_string(), status_code: ResponseStatusCode::Conflict, override_output: false }
+        RouteError {
+            message: msg.to_string(),
+            status_code: ResponseStatusCode::Conflict,
+            override_output: false,
+        }
     }
     pub fn custom(msg: &str, status_code: ResponseStatusCode) -> RouteError {
-        RouteError { message: msg.to_string(), status_code, override_output: true }
+        RouteError {
+            message: msg.to_string(),
+            status_code,
+            override_output: true,
+        }
     }
 
     pub fn output(&self) -> String {
@@ -89,10 +133,12 @@ impl RouteError {
     pub fn header(&self) -> Vec<u8> {
         let mut output = String::from("HTTP/1.1 ");
         output += &self.status_code.http_string();
+        if !self.override_output {
+            output += "\r\nContent-Type: application/json; charset=utf-8";
+        }
         output += "\r\n\r\n";
         return output.into_bytes();
     }
-
 }
 
 #[derive(Clone)]
@@ -271,25 +317,31 @@ impl BodyContents {
     pub fn json_object(&self) -> Option<&JsonObject> {
         match self {
             BodyContents::JsonObject(j) => Some(j),
-            _ => None
+            _ => None,
         }
-    }    
+    }
     pub fn as_json_object(self) -> JsonObject {
         match self {
             BodyContents::JsonObject(j) => j,
-            _ => JsonObject::from_string("{}".to_string())
+            _ => JsonObject::from_string("{}".to_string()),
         }
     }
     pub fn json_array(&self) -> Option<&JsonArray> {
         match self {
             BodyContents::JsonArray(j) => Some(j),
-            _ => None
+            _ => None,
         }
     }
     pub fn as_json_array(self) -> JsonArray {
         match self {
             BodyContents::JsonArray(j) => j,
-            _ => JsonArray::from_string("[]".to_string())
+            _ => JsonArray::from_string("[]".to_string()),
+        }
+    }
+    pub fn as_bytes(self) -> Vec<u8> {
+        match self {
+            BodyContents::Binary(j) => j,
+            _ => Vec::new(),
         }
     }
 }
