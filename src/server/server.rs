@@ -28,7 +28,7 @@ impl<T: 'static + Send> Server<T> {
             if let Ok(conn) = self.listener.accept() {
                 let (mut req_stream, _) = conn;
                 let req_parsed = self.create_request_object(&mut req_stream);                
-                let mut matched_path: fn(&Request, &T) -> Result<Response, RouteError> = Server::default_error;
+                let mut matched_path: fn(Request, &T) -> Result<Response, RouteError> = Server::default_error;
                 if let Some(handler) = self
                     .routes
                     .handler(&req_parsed.request_type, &req_parsed.path)
@@ -116,7 +116,7 @@ impl<T: 'static + Send> Server<T> {
         return created_request;
     }
 
-    fn default_error(_: &Request, _: &T) -> Result<Response, RouteError> {
+    fn default_error(_: Request, _: &T) -> Result<Response, RouteError> {
         Ok(Response::string("404 not found").status(ResponseStatusCode::NotFound))
     }
 }
@@ -125,13 +125,13 @@ impl<T: 'static + Send> Server<T> {
 pub struct Route<T: 'static + Send> {
     path: String,
     request_type: RequestType,
-    handler: fn(&Request, &T) -> Result<Response, RouteError>,
+    handler: fn(Request, &T) -> Result<Response, RouteError>,
 }
 impl<T: 'static + Send> Route<T> {
     pub fn create(
         path: &str,
         request_type: RequestType,
-        handler: fn(&Request, &T) -> Result<Response, RouteError>,
+        handler: fn(Request, &T) -> Result<Response, RouteError>,
     ) -> Route<T> {
         let mut resolved_path = String::new();
         if !path.starts_with("/") {
@@ -164,7 +164,7 @@ impl ToBytes for &str {
 pub struct IncomingRequest<T: 'static + Send> {
     pub request: Request,
     pub stream: TcpStream,
-    pub route: fn(&Request, &T) -> Result<Response, RouteError>,
+    pub route: fn(Request, &T) -> Result<Response, RouteError>,
 }
 
 pub struct RouteStorage<T: 'static + Send> {

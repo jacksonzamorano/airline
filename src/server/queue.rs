@@ -66,7 +66,7 @@ impl RequestWorker {
                 if let Ok(mut ir_task) = ir_task_op {
                     // Tell the handler to parse it
                     let mut bytes = Vec::new();
-                    match (ir_task.route)(&ir_task.request, &data) {
+                    match (ir_task.route)(ir_task.request, &data) {
                         Ok(body) => {
                             bytes.append(&mut body.header());
                             bytes.append(&mut body.bytes())
